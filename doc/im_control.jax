@@ -91,6 +91,12 @@ IM/IMEの制御についてはOSや環境、GVimかVim(非GUI)か、それぞれ
   ・|im_control_other|
     その他(SCIM, uim等)
 
+
+(注意)
+<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
+
 (注意)
 プラグインの性質上、GVimとVim(非GUI)やOSで設定を変更する必要があります。
 必要に応じてhas('gui_running')やhas('unix')等で切り分けてください。
@@ -129,6 +135,10 @@ unixのGVimでは動作するがVim(非GUI)では動作しない環境の場合
   inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
 <
   * 日本語入力固定モード切替の<C-j>は好みに合わせて変更して構いません。
+
+<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
 
 <C-^>を GVimでしか使えない場合は切り分けて使用します。
 >
@@ -369,6 +379,10 @@ uim等を使用していてIM自体にGVim用vi協調モードがある場合は
   " GVimの時だけ「日本語入力固定モード」のvi協調モードを無効化
   let IM_vi_CooperativeMode = has('gui_running') ? 0 : 1
 
+<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
+
 ==============================================================================
 3. オプション                                              *im_control_option*
 
@@ -462,6 +476,10 @@ IMState = 2なら「日本語入力固定モード」切替キーで「日本語
   " 挿入モード終了時にIME状態を保存しない
   inoremap <silent> <ESC> <ESC>:IMCtrl('Off')<CR>
   inoremap <silent> <C-[> <ESC>:IMCtrl('Off')<CR>
+
+<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
 
 ------------------------------------------------------------------------------
 3.4 「日本語入力固定モード」の動作設定                       *im_control_mode*
