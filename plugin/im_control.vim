@@ -1,11 +1,13 @@
 "=============================================================================
 "    Description: 日本語入力固定モード(JpFixMode)
 "                 IME/IM Control (Windows/Linux/Mac)
-"                 https://sites.google.com/site/fudist/Home/vim-nihongo-ban/vim-japanese/ime-control
 "     Maintainer: fuenor@gmail.com
-"        CAUTION: LinuxでIBus+Pythonが使える環境以外ではxvkbd等が必要になります
+"                 https://github.com/fuenor/im_control.vim
+"                 https://sites.google.com/site/fudist/Home/vim-nihongo-ban/vim-japanese/ime-control
+"        CAUTION: WindowsまたはIBus+Pythonが使える環境以外ではxvkbd等なんらかの
+"                 IM制御方法を用意する必要があります。
 "=============================================================================
-let s:version = 115
+let s:version = 116
 scriptencoding utf-8
 
 if exists('g:disable_IM_Control') && g:disable_IM_Control == 1
@@ -27,6 +29,38 @@ let g:IM_Control_version = s:version
 " オプション
 """"""""""""""""""""""""""""""
 " IM制御モード
+" ---------------------------------------------------
+" | 0 | 何もしない                                    |
+" ---------------------------------------------------
+"  IM制御が一切行えない場合
+" ---------------------------------------------------
+" | 1 | On/Off個別制御                                |
+" ---------------------------------------------------
+"  IM On/Offが個別制御できる場合
+" ---------------------------------------------------
+" | 2 | JpFixMode制御のみ                             |
+" | 3 | JpFixMode制御+疑似vi協調モード(JpFixMode専用) |
+" ---------------------------------------------------
+"  IM制御が Toggleしか使用できない場合の補助
+"  2 : 挿入モードへの移行時のみJpFixMode制御を行う。
+"  3 : JpFixModeが Onなら、挿入モードでは常に IM Onと
+"      仮定して、ノーマルモード移行時に Toggleを実行。
+" ---------------------------------------------------
+" | 4 | <C-^>でIM制御が行える場合
+" ---------------------------------------------------
+" ---------------------------------------------------
+" | 5 | IBus+PythonでIM制御が行える場合
+" ---------------------------------------------------
+"  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
+
+""""""""""""""""""""""""""""""
+"  日本語入力固定モードのキー設定
+"  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+"
+"  IM_CtrlMode = 4の場合は<C-^>を付加する必要がある
+"  inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
+
+" init
 if !exists('g:IM_CtrlMode')
   let g:IM_CtrlMode = 1
   " Windows
@@ -34,29 +68,20 @@ if !exists('g:IM_CtrlMode')
     let g:IM_CtrlMode = 4
   endif
 endif
-" IM制御モード(IM_CtrlMode)の設定
-" ---------------------------------------------------
-" | 0 | 何もしない                                    |
-" ---------------------------------------------------
-" * IM制御が一切行えない場合
-" ---------------------------------------------------
-" | 1 | On/Off個別制御                                |
-" ---------------------------------------------------
-" * IM On/Offが個別制御できる場合
-" ---------------------------------------------------
-" | 2 | JpFixMode制御のみ                             |
-" | 3 | JpFixMode制御+疑似vi協調モード(JpFixMode専用) |
-" ---------------------------------------------------
-" * IM制御が Toggleしか使用できない場合の補助
-"   2 : 挿入モードへの移行時のみJpFixMode制御を行う。
-"   3 : JpFixModeが Onなら、挿入モードでは常に IM Onと
-"       仮定して、ノーマルモード移行時に Toggleを実行。
-" ---------------------------------------------------
-" | 4 | <C-^>でIM制御が行える場合
-" ---------------------------------------------------
 
 if g:IM_CtrlMode == 0
   finish
+endif
+
+" IBus+Python
+if g:IM_CtrlMode == 5
+  if !exists('g:IM_CtrlIBusPython')
+    let g:IM_CtrlIBusPython = 1
+  endif
+  let g:IM_CtrlMode = 1
+endif
+if g:IM_CtrlMode != 1
+  let g:IM_CtrlIBusPython = 0
 endif
 
 " ---------------------------------------------------
@@ -93,19 +118,19 @@ endif
 
 """""""""""""""""""""""""""""
 " 外部スクリプトを実行する際に非同期で呼び出す。
-if !exists('IM_CtrlAsync')
-  let IM_CtrlAsync = '&'
+if !exists('g:IM_CtrlAsync')
+  let g:IM_CtrlAsync = '&'
 endif
 
 " JpFixMode切替時に Toggleも実行する。
 if !exists('g:IM_JpFixModeAutoToggle')
-  let IM_JpFixModeAutoToggle = 0
+  let g:IM_JpFixModeAutoToggle = 0
 endif
 
 """""""""""""""""""""""""""""
 " IBusのPythonによる制御方法指定
-if !exists('IM_CtrlIBusPython')
-  let IM_CtrlIBusPython = 0
+if !exists('g:IM_CtrlIBusPython')
+  let g:IM_CtrlIBusPython = 0
 endif
 " IBusを Pythonで切替可能可能な場合に設定するオプション
 " CAUTION: current_input_contxt は current_input_context のtypoと思われる
@@ -118,8 +143,8 @@ endif
 " ---------------------------------------------------
 
 " 自動生成するpythonスクリプト保存場所
-if !exists('IM_CtrlIBusPythonFileDir')
-  let IM_CtrlIBusPythonFileDir = fnamemodify(tempname(), ':h')
+if !exists('g:IM_CtrlIBusPythonFileDir')
+  let g:IM_CtrlIBusPythonFileDir = fnamemodify(tempname(), ':h')
 endif
 
 " 使用するPythonインターフェイス
@@ -131,8 +156,8 @@ if !exists('g:IM_CtrlIBusPythonVer')
 endif
 
 " JpFixModeの切り替えにPyIBusToggleEx()を使用する
-if !exists('IM_CtrlIBusPythonToggleEx')
-  let IM_CtrlIBusPythonToggleEx = 0
+if !exists('g:IM_CtrlIBusPythonToggleEx')
+  let g:IM_CtrlIBusPythonToggleEx = 0
 endif
 
 " モードフック
@@ -410,11 +435,6 @@ if g:IM_CtrlIBusPython == 1 || g:IM_CtrlIBusPython == 3 || (g:IM_CtrlIBusPython 
     endfunction
   endif
 endif
-
-""""""""""""""""""""""""""""""
-" IMがすぐに切り替わらない対策
-" silent! inoremap <silent> <unique> <ESC> <ESC>
-" silent! inoremap <silent> <unique> <C-[> <ESC>
 
 " For your eyes only.
 if exists('g:fudist')
