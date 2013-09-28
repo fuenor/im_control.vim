@@ -122,10 +122,17 @@ if !exists('g:IM_CtrlAsync')
   let g:IM_CtrlAsync = '&'
 endif
 
-" JpFixMode切替時に Toggleも実行する。
+" JpFixMode切替時に IMCtrl('Toggle')を実行する。
 if !exists('g:IM_JpFixModeAutoToggle')
   let g:IM_JpFixModeAutoToggle = 0
 endif
+" ---------------------------------------------------
+"   0 : Toggleを実行しない(Toggleではなく、モードに合わせてOn, Offを実行する)
+"   1 : IMCtrl('Toggle')を実行
+"   2 : IMCtrl('On')のみ実行
+"   3 : IMCtrl('Off')のみ実行
+"   4 : 何もしない
+" ---------------------------------------------------
 
 """""""""""""""""""""""""""""
 " IBusのPythonによる制御方法指定
@@ -241,6 +248,12 @@ function! IMState(cmd)
     endif
     if g:IM_JpFixModeAutoToggle == 1
       let cmd = 'Toggle'
+    elseif g:IM_JpFixModeAutoToggle == 2 && cmd == 'Off'
+      let cmd = ''
+    elseif g:IM_JpFixModeAutoToggle == 3 && cmd == 'On'
+      let cmd = ''
+    elseif g:IM_JpFixModeAutoToggle == 4
+      let cmd = ''
     endif
   endif
   call IMCtrl(cmd)
