@@ -9,9 +9,10 @@
   1. Intro                                               |im_control_intro|
     1.1 日本語入力固定モードとは                         |im_control_outline|
   2. インストール                                        |im_control_install|
-    2.1 Windowsの場合                                    |im_control_ctrl_hat|
-    2.2 IBus+Pythonの場合                                |im_control_python|
-    2.3 その他の場合                                     |im_control_other|
+    2.1 Windows                                          |im_control_ctrl_hat|
+    2.2 IBus+Python                                      |im_control_python|
+    2.3 その他                                           |im_control_other|
+    2.4 android                                          |im_control_android|
   3. オプション                                          |im_control_option|
     3.1 「日本語入力固定モード」の状態表示               |im_control_status|
     3.2 バッファごとの制御                               |im_control_buflocal|
@@ -90,6 +91,8 @@ Windowsの場合でもいちいちIMEをオフにする必要はありません�
     Windows, MacのGVim等で<C-^>によるIM制御が行える場合
   ・|im_control_python|
     IBusを使用していてPythonがインストールされている場合
+  ・|im_control_android|
+    androidの場合
   ・|im_control_other|
     その他(SCIM, uim等)
 
@@ -390,6 +393,56 @@ uim等を使用していてIM自体にGVim用vi協調モードがある場合は
 >
   set timeout timeoutlen=3000 ttimeoutlen=100
 
+------------------------------------------------------------------------------
+2.4 androidの場合                                        *im_control_android*
+
+androidの現状(Android 4.3)としてはIME制御を各IMEが独自に処理しているため、OSと
+して統一されたIME制御方法は存在しません。
+Android 4.1以降ではuser-installable keyboard mapsという仕組みが用意されて、英
+語配列でしか使えなかったキーボードを日本語配列や独自設定配列で使用可能ですが、
+Google日本語のようにハードウェアキーボードのキーマップ設定を無視して独自処理す
+るものもあります。
+
+したがってandroidでは各IMEの制御に合わせて|im_control_other|で説明している
+IMCtrl()を適切に設定する必要があります。
+
+今回はWnn(またはWnn keyboard lab)で作者が実際に使用している設定をサンプルとし
+て解説します。
+以下がandroid用として.vimrcに追加している設定で、<C-j>によって日本語入力固定
+モードが使用可能です。
+>
+  " android (Wnn)用設定
+
+  function! IMCtrl(cmd)
+    let cmd = a:cmd
+    if cmd == 'On'
+      let res = system('input keyevent KEYCODE_ZENKAKU_HANKAKU&')
+    elseif cmd == 'Off'
+      " 実際には意味が無いので無効化
+      " let res = system('input keyevent KEYCODE_ESCAPE&')
+    elseif cmd == 'Toggle'
+    endif
+    return ''
+  endfunction
+
+  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+
+見ればわかるようにIME制御は[半角/全角]の押下イベントを発生させているだけです。
+IMEオフを行えるキーはWnnに無いようなのですが、<ESC>でIMEオフになるので実用上は
+問題ありません。
+なお前述のuser-installable keyboard mapsを使用して日本語配列に設定している場合
+は[半角/全角]キーでIMEのオン／オフも行えます。
+user-installable keyboard mapsによって日本語配列化するアプリはGoogle Playでも
+配布されているので適当なアプリをインストールすると良いでしょう。
+
+英語配列で使用したい場合は、以下のようにGRAVEキーでIMEオン出来るようにすると良
+いかもしれません。
+>
+  inoremap <silent> ` <C-r>=IMCtrl('On')<CR>
+
+個人的には、英語配列でGRAVEだけ[半角/全角]キーとして動作するように設定したキー
+マップを作成して使用しています。
+
 ==============================================================================
 3. オプション                                              *im_control_option*
 
@@ -544,6 +597,23 @@ IM_vi_CooperativeMode
 | 0 | 何もしない
 +----------------------------------------------------------------------------
 | 1 |「日本語入力固定モード」独自の vi協調モードが有効になります。
++----------------------------------------------------------------------------
+
+日本語入力固定モード切替時の処理
+
+IM_JpFixModeAutoToggle = 0
++----------------------------------------------------------------------------
+| 0 | 日本語入力固定モードにあわせてIMCtrl('On')またはIMCtrl('Off')を実行
+|   | IMCtrl('Toggle')は実行しない
++----------------------------------------------------------------------------
+| 1 | IMCtrl('Toggle')を実行
+|   | IM制御が Toggleしか使用できない場合に設定します。
++----------------------------------------------------------------------------
+| 2 | IMCtrl('On')のみ実行
++----------------------------------------------------------------------------
+| 3 | IMCtrl('Off')のみ実行
++----------------------------------------------------------------------------
+| 4 | なにもしない
 +----------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
