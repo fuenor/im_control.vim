@@ -406,28 +406,33 @@ Google日本語のようにハードウェアキーボードのキーマップ�
 したがってandroidでは各IMEの制御に合わせて|im_control_other|で説明している
 IMCtrl()を適切に設定する必要があります。
 
-今回はWnn(またはWnn keyboard lab)で作者が実際に使用している設定をサンプルとし
+今回はiWnn(またはWnn keyboard lab)で作者が実際に使用している設定をサンプルとし
 て解説します。
 以下がandroid用として.vimrcに追加している設定で、<C-j>によって日本語入力固定
 モードが使用可能です。
 >
-  " android (Wnn)用設定
+ " im_control.vim
+ inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
 
-  function! IMCtrl(cmd)
-    let cmd = a:cmd
-    if cmd == 'On'
-      let res = system('input keyevent KEYCODE_ZENKAKU_HANKAKU&')
-    elseif cmd == 'Off'
-      " 実際には意味が無いので無効化
-      " let res = system('input keyevent KEYCODE_ESCAPE&')
-    elseif cmd == 'Toggle'
-    endif
-    return ''
-  endfunction
+ " android (Wnn Keyboard lab)
+ let IM_Keycode = 'KEYCODE_ZENKAKU_HANKAKU'
+ " android (iWnn)
+ let IM_Keycode = 'KEYCODE_GRAVE'
 
-  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+ function! IMCtrl(cmd)
+   let cmd = a:cmd
+   if cmd == 'On'
+     let res = system('input keyevent '.g:IM_Keycode.'&')
+   elseif cmd == 'Off'
+     " 実際には意味が無いので無効化
+     " let res = system('input keyevent KEYCODE_ESCAPE&')
+   elseif cmd == 'Toggle'
+   endif
+   return ''
+ endfunction
 
 見ればわかるようにIME制御は[半角/全角]の押下イベントを発生させているだけです。
+iWnnとWnn keyboard labでキーコードが違うので気をつけてください。
 IMEオフを行えるキーはWnnに無いようなのですが、<ESC>でIMEオフになるので実用上は
 問題ありません。
 なお前述のuser-installable keyboard mapsを使用して日本語配列に設定している場合
