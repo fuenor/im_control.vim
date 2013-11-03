@@ -445,8 +445,17 @@ user-installable keyboard mapsによって日本語配列化するアプリはGo
 >
   inoremap <silent> ` <C-r>=IMCtrl('On')<CR>
 
-個人的には、英語配列でGRAVEだけ[半角/全角]キーとして動作するように設定したキー
-マップを作成して使用しています。
+ただし、inputコマンドはJavaVMを起動するためワンテンポ遅れる感じに処理されてし
+まいます。
+
+問題になるのはインサートモード移行時に日本語入力を有効化する場合ですが、気にな
+るようならAndroid Terminal EmulatorにIME制御パッチを当てるなどで対処すると良い
+かもしれません。
+
+https://sites.google.com/site/fudist/Home/qfixhowm/other-service/howm-android
+
+アクションバーやAlt+[半角/全角]、エスケープシーケンスからIME制御を行えるように
+機能追加をし、マルチバイト文字関係の処理を日本語環境向けに変更しています。
 
 ==============================================================================
 3. オプション                                              *im_control_option*
