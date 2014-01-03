@@ -25,6 +25,9 @@ endif
 let g:loaded_IM_Control = 1
 let g:IM_Control_version = s:version
 
+let s:keepcpo = &cpo
+set cpo&vim
+
 """"""""""""""""""""""""""""""
 " オプション
 """"""""""""""""""""""""""""""
@@ -175,6 +178,10 @@ augroup InsertHookIM
   autocmd BufEnter    * call <SID>BufEnter()
   autocmd BufLeave    * call <SID>BufLeave()
 augroup END
+
+if &ttimeoutlen < 0
+  set timeout ttimeoutlen=100
+endif
 
 """"""""""""""""""""""""""""""
 " IM制御用関数サンプル(要xvkbd)
@@ -495,3 +502,5 @@ if exists('g:fudist')
   inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
 endif
 
+let &cpo=s:keepcpo
+unlet s:keepcpo
