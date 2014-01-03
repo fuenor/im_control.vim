@@ -9,10 +9,12 @@
   1. Intro                                               |im_control_intro|
     1.1 日本語入力固定モードとは                         |im_control_outline|
   2. インストール                                        |im_control_install|
-    2.1 Windows                                          |im_control_ctrl_hat|
-    2.2 IBus+Python                                      |im_control_python|
-    2.3 その他                                           |im_control_other|
-    2.4 android                                          |im_control_android|
+    2.1 Windowsまたは<C-^>でIME切替可能な場合            |im_control_ctrl_hat|
+    2.1.1 MacVim-Kaoriya+iTerm2                          |im_control_mac_iterm2|
+    2.2 fcitx                                            |im_control_fcitx|
+    2.3 IBus+Python                                      |im_control_python|
+    2.4 その他                                           |im_control_other|
+    2.5 android                                          |im_control_android|
   3. オプション                                          |im_control_option|
     3.1 「日本語入力固定モード」の状態表示               |im_control_status|
     3.2 バッファごとの制御                               |im_control_buflocal|
@@ -88,13 +90,18 @@ Windowsの場合でもいちいちIMEをオフにする必要はありません�
 わせた設定を !!!必ず!!! 行う必要があります。
 
   ・|im_control_ctrl_hat|
-    Windows, MacのGVim等で<C-^>によるIM制御が行える場合
+    [Windows] [Mac] Windows, MacのGVim等で<C-^>によるIM制御が行える場合
+  ・|im_control_mac_iterm2|
+    [Mac] iTerm2とMacVim-Kaoriyaで使用している場合
+  ・|im_control_fcitx|
+    [Linux] fcitxを使用している場合
   ・|im_control_python|
-    IBusを使用していてPythonがインストールされている場合
+    [Linux] IBusを使用していてPythonがインストールされている場合
+    (IBus1.5以降はIMEの状態制御を行わない方針になりましたので使用不可能です)
   ・|im_control_android|
-    androidの場合
+    [android] androidの場合
   ・|im_control_other|
-    その他(SCIM, uim等)
+    [Linux] その他(SCIM, uim等)
 
 (注意)
 プラグインの性質上、GVimとVim(非GUI)やOSで設定を変更する必要があります。
@@ -159,6 +166,7 @@ Windowsではこれで終了ですが、MacVim-KaoriyaのようにIM制御処理
 いる場合は以下を参照してください。
 
 ・MacVim-Kaoriya
+
 基本的には以下を .vimrc へ追加するだけで使用可能です。
 >
   " 「日本語入力固定モード」の動作モード
@@ -172,11 +180,11 @@ Windowsではこれで終了ですが、MacVim-KaoriyaのようにIM制御処理
 
 ・MacVim-Kaoriyaのnoimdisableactivateについて
 
-デフォルトではim_control.vimが自動設定を行うので、あまり気にする必要はないので
-すが MacVim-Kaoriyaで im_control.vimを使用する場合 noimdisableactivateを設定す
-る必要があります。
-ただし noimdisableactivateは逆に.vimrc ではなく.gvimrcで設定しないと有効になり
-ませんので明示的に指定する場合は気をつけてください。
+デフォルトではim_control.vimが自動設定を行うので、気にする必要はないのですが
+MacVim-Kaoriyaで im_control.vimを使用する場合 noimdisableactivateを設定する必
+要があります。
+ただし noimdisableactivateは.vimrc ではなく.gvimrcで設定しないと有効になりませ
+んので明示的に指定する場合は気をつけてください。
 
 なおMacVim-Kaoriyaの仕様変更等で noimdisableactivateの設定を変える必要がある場
 合は「日本語入力固定モード」の MacVim-Kaoriya対策を無効化してください。
@@ -192,12 +200,37 @@ Windowsではこれで終了ですが、MacVim-KaoriyaのようにIM制御処理
   " noimdisableactivateは .gvimrcで設定する必要があります
   set noimdisableactivate
 
+2.1.1 iTerm2 + Vim (MacVim-Kaoriya)                  *im_control_mac_iterm2*
+
+作者には動作環境がないので確認していませんが、iTerm2 と MacVim-Kaoriya で使用
+している方はいるようです。
+http://qiita.com/wakuworks/items/7c9c6ab60275fd865b02
+
 ------------------------------------------------------------------------------
-2.2 IBusを使用していてPythonがインストールされている場合   *im_control_python*
+2.2 fcitxを使用している場合                                *im_control_fcitx*
+
+fcitxを使用している場合はcall system("fcitx-remote -t")などで制御可能です。
+以下を.vimrcに追加してください。
+>
+  " 「日本語入力固定モード」の動作モード(fcitx)
+  let IM_CtrlMode = 6
+  " 「日本語入力固定モード」切替キー
+  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+<
+  * 日本語入力固定モード切替の<C-j>は好みに合わせて変更して構いません。
+
+<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
+
+------------------------------------------------------------------------------
+2.3 IBusを使用していてPythonがインストールされている場合   *im_control_python*
 
 IMがIBusでPythonが使える場合は Pythonスクリプトで IBusを制御可能です。
 Vim自体の Pythonインターフェイスが無効でも、OSに Pythonがインストールされてい
 れば動作します。(動作確認 IBus 1.3.9, Ubuntu 10.10)
+
+!!! IBus1.5以降はIMEの状態制御を行わない方針になりましたので使用不可能です。
 >
   " 「日本語入力固定モード」の動作モード
   let IM_CtrlMode = 5
@@ -281,7 +314,7 @@ i<C-space><ESC> だとノーマルモード移行時に IMがオフになりま�
 協調モードを無効化してください。
 
 ------------------------------------------------------------------------------
-2.3 その他の方法で制御する                                 *im_control_other*
+2.4 その他の方法で制御する                                 *im_control_other*
 
 まずはなんらかのIM制御処理を組み込む必要があります。
 
@@ -394,9 +427,9 @@ uim等を使用していてIM自体にGVim用vi協調モードがある場合は
   set timeout timeoutlen=3000 ttimeoutlen=100
 
 ------------------------------------------------------------------------------
-2.4 androidの場合                                        *im_control_android*
+2.5 androidの場合                                        *im_control_android*
 
-androidの現状(Android 4.3)としてはIME制御を各IMEが独自に処理しているため、OSと
+androidの現状(～Android 4.4)としてはIME制御を各IMEが独自に処理しているため、OSと
 して統一されたIME制御方法は存在しません。
 Android 4.1以降ではuser-installable keyboard mapsという仕組みが用意されて、英
 語配列でしか使えなかったキーボードを日本語配列や独自設定配列で使用可能ですが、
@@ -406,7 +439,7 @@ Google日本語のようにハードウェアキーボードのキーマップ�
 したがってandroidでは各IMEの制御に合わせて|im_control_other|で説明している
 IMCtrl()を適切に設定する必要があります。
 
-今回はiWnn(またはWnn keyboard lab)で作者が実際に使用している設定をサンプルとし
+今回はiWnn(またはWnn keyboard lab)で作者が実際に使用してみた設定をサンプルとし
 て解説します。
 以下がandroid用として.vimrcに追加している設定で、<C-j>によって日本語入力固定
 モードが使用可能です。
@@ -452,10 +485,14 @@ user-installable keyboard mapsによって日本語配列化するアプリはGo
 るようならAndroid Terminal EmulatorにIME制御パッチを当てるなどで対処すると良い
 かもしれません。
 
+・Android Terminal EmulatorIME制御改変版
+
 https://sites.google.com/site/fudist/Home/qfixhowm/other-service/howm-android
 
 アクションバーやAlt+[半角/全角]、エスケープシーケンスからIME制御を行えるように
 機能追加をし、マルチバイト文字関係の処理を日本語環境向けに変更しています。
+IME制御改変版ではiWnn, Wnn keyboard lab, Google日本語入力, atok, などIMEを選ば
+ずに使用可能です。
 
 ==============================================================================
 3. オプション                                              *im_control_option*

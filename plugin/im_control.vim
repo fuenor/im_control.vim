@@ -4,10 +4,8 @@
 "     Maintainer: fuenor@gmail.com
 "                 https://github.com/fuenor/im_control.vim
 "                 https://sites.google.com/site/fudist/Home/vim-nihongo-ban/vim-japanese/ime-control
-"        CAUTION: WindowsまたはIBus+Pythonが使える環境以外ではxvkbd等なんらかの
-"                 IM制御方法を用意する必要があります。
 "=============================================================================
-let s:version = 116
+let s:version = 117
 scriptencoding utf-8
 
 if exists('g:disable_IM_Control') && g:disable_IM_Control == 1
@@ -51,11 +49,16 @@ set cpo&vim
 " ---------------------------------------------------
 " | 4 | <C-^>でIM制御が行える場合
 " ---------------------------------------------------
+"  WindowsやMacのGVimなど
 " ---------------------------------------------------
 " | 5 | IBus+PythonでIM制御が行える場合
 " ---------------------------------------------------
 "  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
-
+" ---------------------------------------------------
+" | 6 | fcitxの場合
+" ---------------------------------------------------
+"  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
+"
 """"""""""""""""""""""""""""""
 "  日本語入力固定モードのキー設定
 "  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
@@ -73,6 +76,8 @@ if !exists('g:IM_CtrlMode')
 endif
 
 if g:IM_CtrlMode == 0
+  let &cpo=s:keepcpo
+  unlet s:keepcpo
   finish
 endif
 
@@ -266,6 +271,25 @@ function! IMState(cmd)
   call IMCtrl(cmd)
   return ''
 endfunction
+
+""""""""""""""""""""""""""""""
+" IM制御用関数(fcitx)
+if (g:IM_CtrlMode == 6)
+  silent! function IMCtrl(cmd)
+    let cmd = a:cmd
+    if cmd == 'On'
+      call system('fcitx-remote -o > /dev/null 2>&1 '.g:IM_CtrlAsync)
+    elseif cmd == 'Off'
+      call system('fcitx-remote -c > /dev/null 2>&1 '.g:IM_CtrlAsync)
+    elseif cmd == 'Toggle'
+      call system('fcitx-remote -t > /dev/null 2>&1 '.g:IM_CtrlAsync)
+    endif
+    return ''
+  endfunction
+  let g:IM_CtrlMode = 1
+  let g:IM_vi_CooperativeMode = 1
+  let g:IM_JpFixModeAutoToggle = 0
+endif
 
 """"""""""""""""""""""""""""""
 " IM制御用関数(デフォルト)
@@ -462,6 +486,8 @@ if exists('g:fudist')
 endif
 
 if g:IM_CtrlMode != 4
+  let &cpo=s:keepcpo
+  unlet s:keepcpo
   finish
 endif
 
