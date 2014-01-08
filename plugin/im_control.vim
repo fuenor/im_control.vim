@@ -505,6 +505,10 @@ endif
 silent! inoremap <silent> <ESC> <ESC>
 silent! inoremap <silent> <C-[> <ESC>
 
+if (has('gui_running') && (has('multi_byte_ime') || has('xim')))
+  au GUIEnter * set iminsert=0 imsearch=0
+endif
+
 function! IMState(cmd)
   if s:init()
     return
