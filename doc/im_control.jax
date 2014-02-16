@@ -512,16 +512,10 @@ IME制御改変版ではiWnn, Wnn keyboard lab, Google日本語入力, atok, な
 <
   [日本語固定] のメッセージ部分は好みに書き換えてください。
 
-im_control.vimがない環境でも .vimrcを変更しなくて済むように、.vimrc内でダミー
-関数も定義しておくと良いかもしれません。
+im_control.vimがない環境でも .vimrcを変更しなくて済むように、VimEnterで定義し
+ておくと良いかもしれません。
 >
-  " 「日本語入力固定モード」がオンの場合、ステータス行にメッセージ表示
-  set statusline+=%{IMStatus('[日本語固定]')}
-
-  " im_control.vimがない環境でもエラーを出さないためのダミー関数
-  function! IMStatus(...)
-    return ''
-  endfunction
+  autocmd VimEnter * if g:loaded_IM_Control|set statusline+=%{IMStatus('[日本語固定]')}|endif
 
 ------------------------------------------------------------------------------
 3.2 バッファごとに「日本語入力固定モード」を制御する     *im_control_buflocal*
