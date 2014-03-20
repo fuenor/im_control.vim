@@ -12,9 +12,10 @@
     2.1 Windowsまたは<C-^>でIME切替可能な場合            |im_control_ctrl_hat|
     2.1.1 MacVim-Kaoriya+iTerm2                          |im_control_mac_iterm2|
     2.2 fcitx                                            |im_control_fcitx|
-    2.3 IBus+Python                                      |im_control_python|
-    2.4 その他                                           |im_control_other|
-    2.5 android                                          |im_control_android|
+    2.3 IBus(1.5以降)                                    |im_control_ibus|
+    2.4 IBus(1.4まで)+Python                             |im_control_python|
+    2.5 その他                                           |im_control_other|
+    2.6 android                                          |im_control_android|
   3. オプション                                          |im_control_option|
     3.1 「日本語入力固定モード」の状態表示               |im_control_status|
     3.2 バッファごとの制御                               |im_control_buflocal|
@@ -95,8 +96,10 @@ Windowsの場合でもいちいちIMEをオフにする必要はありません�
     [Mac] iTerm2とMacVim-Kaoriyaで使用している場合
   ・|im_control_fcitx|
     [Linux] fcitxを使用している場合
+  ・|im_control_ibus|
+    [Linux] IBus 1.5以降を使用している場合
   ・|im_control_python|
-    [Linux] IBusを使用していてPythonがインストールされている場合
+    [Linux] IBus 1.4を使用していてPythonがインストールされている場合
     (IBus1.5以降はIMEの状態制御を行わない方針になりましたので使用不可能です)
   ・|im_control_android|
     [android] androidの場合
@@ -224,9 +227,57 @@ fcitxを使用している場合はcall system("fcitx-remote -t")などで制御
   set timeout timeoutlen=3000 ttimeoutlen=100
 
 ------------------------------------------------------------------------------
-2.3 IBusを使用していてPythonがインストールされている場合   *im_control_python*
+2.3 IBus 1.5以降の場合                                     *im_control_ibus*
 
-IMがIBusでPythonが使える場合は Pythonスクリプトで IBusを制御可能です。
+IBus 1.5以降では開発方針の変更により、IME制御方法が変更されました。
+IBusからはエンジンの切替のみを行い、状態制御等は行わないということのようです。
+この場合、端末から"ibus"コマンドでエンジンの切替が行えるなら、im_control.vimが
+使えるということになります。
+
+使えるエンジンはlist-engineコマンドで確認可能です。
+>
+  $ ibus list-engine
+
+エンジンはコマンドから切替可能です。
+>
+  $ ibus engine "mozc-jp"
+
+直接入力へもコマンドから切替可能です。
+>
+  $ ibus engine "xkb:jp::jpn"
+  $ ibus engine "xkb:us::eng"
+
+コマンドで切替可能な事が確認出来た場合は、以下の設定でim_control.vimを使用する
+ことができます。
+>
+  " 「日本語入力固定モード」の動作モード
+  let IM_CtrlMode = 1
+  " 「日本語入力固定モード」切替キー
+  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+
+  " IBus 1.5以降
+  function! IMCtrl(cmd)
+    let cmd = a:cmd
+    if cmd == 'On'
+      let res = system('ibus engine "mozc-jp"')
+    elseif cmd == 'Off'
+      let res = system('ibus engine "xkb:jp::jpn"')
+    endif
+    return ''
+  endfunction
+<
+日本語入力固定モード切替の<C-j>は好みに合わせて変更して構いません。
+<<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
+>
+  set timeout timeoutlen=3000 ttimeoutlen=100
+
+
+(pongoさん、ありがとうございます)
+
+------------------------------------------------------------------------------
+2.4 IBusを使用していてPythonがインストールされている場合   *im_control_python*
+
+IMがIBus 1.4以前でPythonが使える場合は Pythonスクリプトで IBusを制御可能です。
 Vim自体の Pythonインターフェイスが無効でも、OSに Pythonがインストールされてい
 れば動作します。(動作確認 IBus 1.3.9, Ubuntu 10.10)
 
@@ -314,7 +365,7 @@ i<C-space><ESC> だとノーマルモード移行時に IMがオフになりま�
 協調モードを無効化してください。
 
 ------------------------------------------------------------------------------
-2.4 その他の方法で制御する                                 *im_control_other*
+2.5 その他の方法で制御する                                 *im_control_other*
 
 まずはなんらかのIM制御処理を組み込む必要があります。
 
@@ -427,7 +478,7 @@ uim等を使用していてIM自体にGVim用vi協調モードがある場合は
   set timeout timeoutlen=3000 ttimeoutlen=100
 
 ------------------------------------------------------------------------------
-2.5 androidの場合                                        *im_control_android*
+2.6 androidの場合                                        *im_control_android*
 
 androidの現状(～Android 4.4)としてはIME制御を各IMEが独自に処理しているため、OSと
 して統一されたIME制御方法は存在しません。
