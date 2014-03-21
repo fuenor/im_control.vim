@@ -226,6 +226,30 @@ fcitxを使用している場合はcall system("fcitx-remote -t")などで制御
 >
   set timeout timeoutlen=3000 ttimeoutlen=100
 
+NOTE:
+
+IM_CtrlMode = 6は内部的に以下のように設定変更されます。
+>
+  " 「日本語入力固定モード」
+  let IM_CtrlMode = 1
+  " 「日本語入力固定モード」のvi協調モード
+  let IM_vi_CooperativeMode = 1
+
+  """"""""""""""""""""""""""""""
+  " 日本語入力固定モードの制御関数(fcitx)
+  """"""""""""""""""""""""""""""
+  function! IMCtrl(cmd)
+    let cmd = a:cmd
+    if cmd == 'On'
+      let res = system('fcitx-remote -o > /dev/null 2>&1')
+    elseif cmd == 'Off'
+      let res = system('fcitx-remote -c > /dev/null 2>&1')
+    elseif cmd == 'Toggle'
+      let res = system('fcitx-remote -t > /dev/null 2>&1')
+    endif
+    return ''
+  endfunction
+
 ------------------------------------------------------------------------------
 2.3 IBus 1.5以降の場合                                     *im_control_ibus*
 
@@ -270,9 +294,6 @@ IBusからはエンジンの切替のみを行い、状態制御等は行わな�
 <<ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
 >
   set timeout timeoutlen=3000 ttimeoutlen=100
-
-
-(pongoさん、ありがとうございます)
 
 ------------------------------------------------------------------------------
 2.4 IBusを使用していてPythonがインストールされている場合   *im_control_python*
@@ -482,13 +503,10 @@ uim等を使用していてIM自体にGVim用vi協調モードがある場合は
 
 androidの現状(～Android 4.4)としてはIME制御を各IMEが独自に処理しているため、OSと
 して統一されたIME制御方法は存在しません。
-Android 4.1以降ではuser-installable keyboard mapsという仕組みが用意されて、英
-語配列でしか使えなかったキーボードを日本語配列や独自設定配列で使用可能ですが、
-Google日本語のようにハードウェアキーボードのキーマップ設定を無視して独自処理す
-るものもあります。
-
 したがってandroidでは各IMEの制御に合わせて|im_control_other|で説明している
 IMCtrl()を適切に設定する必要があります。
+
+2.6.1 inputコマンド
 
 今回はiWnn(またはWnn keyboard lab)で作者が実際に使用してみた設定をサンプルとし
 て解説します。
@@ -536,8 +554,14 @@ user-installable keyboard mapsによって日本語配列化するアプリはGo
 るようならAndroid Terminal EmulatorにIME制御パッチを当てるなどで対処すると良い
 かもしれません。
 
-・Android Terminal EmulatorIME制御改変版
+2.6.2 端末エミュレータの改変
 
+端末エミュレータやアプリ側でIMEの制御可能なAPI等が用意されていれば、高速に切替
+が行えます。
+筆者は「端末エミュレータ」(Android Terminal Emulator)を改変し、エスケープシー
+ケンスでの切替を可能にして使用しています。
+
+・Android Terminal Emulator日本語処理改変版
 https://sites.google.com/site/fudist/Home/qfixhowm/other-service/howm-android
 
 アクションバーやAlt+[半角/全角]、エスケープシーケンスからIME制御を行えるように
@@ -675,6 +699,9 @@ IM_CtrlMode
 |   | Windowsの場合は常にこの設定が使用されます。
 +----------------------------------------------------------------------------
 | 5 | IBus+Pythonで IM制御が行える場合に設定します。
+|   | (起動後に内部設定が行われ IM_CtrlMode=1に自動変更されます)
++----------------------------------------------------------------------------
+| 6 | fcitxを使用している場合に設定します。
 |   | (起動後に内部設定が行われ IM_CtrlMode=1に自動変更されます)
 +----------------------------------------------------------------------------
 
