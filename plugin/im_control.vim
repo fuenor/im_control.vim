@@ -275,6 +275,7 @@ endfunction
 """"""""""""""""""""""""""""""
 " IM制御用関数(fcitx)
 if (g:IM_CtrlMode == 6)
+  if !exists('*IMCtrl')
   silent! function IMCtrl(cmd)
     let cmd = a:cmd
     if cmd == 'On'
@@ -286,6 +287,7 @@ if (g:IM_CtrlMode == 6)
     endif
     return ''
   endfunction
+  endif
   let g:IM_CtrlMode = 1
   let g:IM_vi_CooperativeMode = 1
   let g:IM_JpFixModeAutoToggle = 0
@@ -293,6 +295,7 @@ endif
 
 """"""""""""""""""""""""""""""
 " IM制御用関数(デフォルト)
+if !exists('*IMCtrl')
 silent! function IMCtrl(cmd)
   let cmd = a:cmd
   if cmd == 'On'
@@ -304,6 +307,7 @@ silent! function IMCtrl(cmd)
   endif
   return ''
 endfunction
+endif
 
 """"""""""""""""""""""""""""""
 " 初期化
@@ -326,9 +330,11 @@ endfunction
 " ユーザ定義用
 " .vimrc で IMCtrlInit() を設定すると自由に初期化処理が設定可能
 " 1 を返すと「日本語入力固定モード」の処理を行わなくなる。
+if !exists('*IMCtrlInit')
 silent! function IMCtrlInit()
   return 0
 endfunction
+endif
 
 " バッファローカルモード
 function s:BufEnter()
@@ -414,15 +420,19 @@ else:
 EOF
 endfunction
 " IBusのvi協調モード対策にInsertEnter時に使用するIM有効化コマンド
+if !exists('*PyIBusEnableEx')
 silent! function PyIBusEnableEx()
   " 外部をコマンドを実行するなら & を付けて非同期で実行すること
   call IMCtrl('On')
 endfunction
+endif
 " IBusのvi協調モード対策にInsertLeave時に使用するIM無効化コマンド
+if !exists('*PyIBusDisableEx')
 silent! function PyIBusDisableEx()
   " 外部をコマンドを実行するなら & を付けて非同期で実行すること
   call IMCtrl('Off')
 endfunction
+endif
 
 if IM_CtrlIBusPython == 3
   if !has(g:IM_CtrlIBusPythonVer)
