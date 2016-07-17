@@ -17,7 +17,7 @@ endif
 if exists('g:loaded_IM_Control') && g:loaded_IM_Control && !exists('fudist')
   finish
 endif
-if v:version < 700 || &cp
+if v:version < 700
   finish
 endif
 let g:loaded_IM_Control = 1
