@@ -296,17 +296,31 @@ endif
 """"""""""""""""""""""""""""""
 " IM制御用関数(デフォルト)
 if !exists('*IMCtrl')
-silent! function IMCtrl(cmd)
-  let cmd = a:cmd
-  if cmd == 'On'
-    let res = system('xvkbd -text "\[Control]\[Shift]\[Insert]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
-  elseif cmd == 'Off'
-    let res = system('xvkbd -text "\[Control]\[Shift]\[Delete]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
-  elseif cmd == 'Toggle'
-    let res = system('xvkbd -text "\[Control]\[space]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
+  if has('unix') && !exists('ANDROID_DATA')
+    function! IMCtrl(cmd)
+      let cmd = a:cmd
+      if cmd == 'On'
+        let res = system('xvkbd -text "\[Control]\[Shift]\[Insert]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
+      elseif cmd == 'Off'
+        let res = system('xvkbd -text "\[Control]\[Shift]\[Delete]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
+      elseif cmd == 'Toggle'
+        let res = system('xvkbd -text "\[Control]\[space]" > /dev/null 2>&1 '.g:IM_CtrlAsync)
+      endif
+      return ''
+    endfunction
+  else
+    function! IMCtrl(cmd)
+      let cmd = a:cmd
+      if cmd == 'On'
+        echo 'IMCtrl(stub) : On'
+      elseif cmd == 'Off'
+        echo 'IMCtrl(stub) : Off'
+      elseif cmd == 'Toggle'
+        echo 'IMCtrl(stub) : Toggle'
+      endif
+      return ''
+    endfunction
   endif
-  return ''
-endfunction
 endif
 
 """"""""""""""""""""""""""""""
