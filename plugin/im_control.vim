@@ -97,8 +97,8 @@ endif
 " set statusline+=%{IMStatus('[日本語固定]')}
 " ---------------------------------------------------
 function! IMStatus(msg)
-  let im =  (g:IM_CtrlMode == 4 && mode() == 'i') ? &iminsert : g:IMState
-  return im ? a:msg : ''
+  " let im =  (g:IM_CtrlMode == 4 && mode() == 'i') ? &iminsert : g:IMState
+  return g:IMState ? a:msg : ''
 endfunction
 
 """"""""""""""""""""""""""""""
@@ -541,15 +541,32 @@ function! IMState(cmd)
   if cmd == 'Enter'
     let &iminsert = g:IMState
   elseif cmd == 'Leave'
-    let g:IMState = &iminsert
     set iminsert=0 imsearch=0
   elseif cmd == 'FixMode'
     let msg = (exists('b:IM_CtrlBufLocal') && b:IM_CtrlBufLocal) ? '(local)' : ''
     let msg = printf(g:IM_CtrlMsg, msg)
-    echo msg . (&iminsert == 2 ? 'On' : 'Off')
+    let g:IMState = g:IMState == 2 ? 0 : 2
+    echo msg . (g:IMState ? 'On' : 'Off')
+  elseif cmd == 'Toggle'
+    let &iminsert = 0
   endif
   return ''
 endfunction
+
+function! s:execExCommand(cmd, ...)
+  let saved_ve = &virtualedit
+  for index in range (1, a:0)
+    if a:{index} == 'onemore'
+      silent setlocal virtualedit+=onemore
+    endif
+  endfor
+  silent exe a:cmd
+  if a:0 > 0
+    silent exe 'setlocal virtualedit='.saved_ve
+  endif
+  return ''
+endfunction
+
 
 " For your eyes only.
 if exists('g:fudist')

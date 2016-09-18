@@ -143,7 +143,12 @@ unixのGVimでは動作するがVim(非GUI)では動作しない環境の場合
   " 「日本語入力固定モード」切替キー
   inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
 <
-  * 日本語入力固定モード切替の<C-j>は好みに合わせて変更して構いません。
+「日本語入力固定モード」の切替ではなく単純なIMのOn/Offも行えるので、IM自体の
+キーマップに関係なくVimの挿入モードでのみ有効なIM切替キーを設定可能です。
+>
+  inoremap <silent> <C-k> <C-^><C-r>=IMState('Toggle')<CR>
+
+各キーマップは好みで変更してください。
 
 <ESC>押下後の反応が遅い場合はttimeoutlenを設定してみてください。
 >
