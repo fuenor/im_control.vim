@@ -296,7 +296,7 @@ endif
 """"""""""""""""""""""""""""""
 " IM制御用関数(デフォルト)
 if !exists('*IMCtrl')
-  if has('unix') && !exists('ANDROID_DATA')
+  if executable('xvkbd')
     function! IMCtrl(cmd)
       let cmd = a:cmd
       if cmd == 'On'
@@ -317,6 +317,8 @@ if !exists('*IMCtrl')
         echo 'IMCtrl(stub) : Off'
       elseif cmd == 'Toggle'
         echo 'IMCtrl(stub) : Toggle'
+      elseif cmd == 'stub'
+        return 1
       endif
       return ''
     endfunction
