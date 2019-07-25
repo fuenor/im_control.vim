@@ -53,7 +53,7 @@ set cpo&vim
 " ---------------------------------------------------
 " | 5 | IBus+PythonでIM制御が行える場合
 " ---------------------------------------------------
-"  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
+"  廃止
 " ---------------------------------------------------
 " | 6 | fcitxの場合
 " ---------------------------------------------------
@@ -506,11 +506,6 @@ if g:IM_CtrlIBusPython == 1 || g:IM_CtrlIBusPython == 3 || (g:IM_CtrlIBusPython 
   endif
 endif
 
-" For your eyes only.
-if exists('g:fudist')
-  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
-endif
-
 if g:IM_CtrlMode != 4
   let &cpo=s:keepcpo
   unlet s:keepcpo
@@ -528,9 +523,6 @@ endif
 "----------------------------------------
 " for Windows / <C-^>
 "----------------------------------------
-silent! inoremap <silent> <ESC> <ESC>
-silent! inoremap <silent> <C-[> <ESC>
-
 if (has('gui_running') && (has('multi_byte_ime') || has('xim')))
   au GUIEnter * set iminsert=0 imsearch=0
 endif
@@ -554,26 +546,6 @@ function! IMState(cmd)
   endif
   return ''
 endfunction
-
-function! s:execExCommand(cmd, ...)
-  let saved_ve = &virtualedit
-  for index in range (1, a:0)
-    if a:{index} == 'onemore'
-      silent setlocal virtualedit+=onemore
-    endif
-  endfor
-  silent exe a:cmd
-  if a:0 > 0
-    silent exe 'setlocal virtualedit='.saved_ve
-  endif
-  return ''
-endfunction
-
-
-" For your eyes only.
-if exists('g:fudist')
-  inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
-endif
 
 let &cpo=s:keepcpo
 unlet s:keepcpo
