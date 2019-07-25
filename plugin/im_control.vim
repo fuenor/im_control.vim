@@ -5,10 +5,14 @@
 "                 https://github.com/fuenor/im_control.vim
 "                 https://sites.google.com/site/fudist/Home/vim-nihongo-ban/vim-japanese/ime-control
 "=============================================================================
+let s:version = 117
 scriptencoding utf-8
 
 if exists('g:disable_IM_Control') && g:disable_IM_Control == 1
   finish
+endif
+if exists('g:IM_Control_version') && g:IM_Control_version < s:version
+  let g:loaded_IM_Control = 0
 endif
 if exists('g:loaded_IM_Control') && g:loaded_IM_Control && !exists('fudist')
   finish
@@ -17,6 +21,7 @@ if v:version < 700
   finish
 endif
 let g:loaded_IM_Control = 1
+let g:IM_Control_version = s:version
 
 let s:keepcpo = &cpo
 set cpo&vim
@@ -26,27 +31,34 @@ set cpo&vim
 """"""""""""""""""""""""""""""
 " IM制御モード
 " ---------------------------------------------------
-" IM_CtrlMode = 0 | IM制御が一切行えない場合
+" | 0 | 何もしない                                    |
 " ---------------------------------------------------
-" IM_CtrlMode = 1 | IM On/Offが個別制御できる場合
-"                 | ※ IMCtrl()の設定が必要
+"  IM制御が一切行えない場合
 " ---------------------------------------------------
-" IM_CtrlMode = 2 | JpFixMode制御のみ
-" IM_CtrlMode = 3 | JpFixMode制御+疑似vi協調モード(JpFixMode専用)
-"                 |
-"                 | ※ IM制御が Toggleしか使用できない場合の補助
-"                 |  2 : 挿入モードへの移行時のみToggleを実行。
-"                 |  3 : JpFixModeが Onなら、挿入モードでは常に IM Onと
-"                 |      仮定して、ノーマルモード移行時に Toggleを実行。
+" | 1 | On/Off個別制御                                |
 " ---------------------------------------------------
-" IM_CtrlMode = 4 | <C-^>でIM制御が行える場合
-"                 | ※ WindowsやMacのGVimなど
+"  IM On/Offが個別制御できる場合
 " ---------------------------------------------------
-" IM_CtrlMode = 5 | IBus+PythonでIM制御が行える場合 (廃止)
+" | 2 | JpFixMode制御のみ                             |
+" | 3 | JpFixMode制御+疑似vi協調モード(JpFixMode専用) |
 " ---------------------------------------------------
-" IM_CtrlMode = 6 | fcitxの場合
+"  IM制御が Toggleしか使用できない場合の補助
+"  2 : 挿入モードへの移行時のみJpFixMode制御を行う。
+"  3 : JpFixModeが Onなら、挿入モードでは常に IM Onと
+"      仮定して、ノーマルモード移行時に Toggleを実行。
 " ---------------------------------------------------
-
+" | 4 | <C-^>でIM制御が行える場合
+" ---------------------------------------------------
+"  WindowsやMacのGVimなど
+" ---------------------------------------------------
+" | 5 | IBus+PythonでIM制御が行える場合
+" ---------------------------------------------------
+"  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
+" ---------------------------------------------------
+" | 6 | fcitxの場合
+" ---------------------------------------------------
+"  起動後に内部設定が行われ IM_CtrlMode=1に自動変更される。
+"
 """"""""""""""""""""""""""""""
 "  日本語入力固定モードのキー設定
 "  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
@@ -67,6 +79,17 @@ if g:IM_CtrlMode == 0
   let &cpo=s:keepcpo
   unlet s:keepcpo
   finish
+endif
+
+" IBus+Python
+if g:IM_CtrlMode == 5
+  if !exists('g:IM_CtrlIBusPython')
+    let g:IM_CtrlIBusPython = 1
+  endif
+  let g:IM_CtrlMode = 1
+endif
+if g:IM_CtrlMode != 1
+  let g:IM_CtrlIBusPython = 0
 endif
 
 " ---------------------------------------------------
@@ -119,6 +142,39 @@ endif
 "   4 : 何もしない
 " ---------------------------------------------------
 
+"""""""""""""""""""""""""""""
+" IBusのPythonによる制御方法指定
+if !exists('g:IM_CtrlIBusPython')
+  let g:IM_CtrlIBusPython = 0
+endif
+" IBusを Pythonで切替可能可能な場合に設定するオプション
+" CAUTION: current_input_contxt は current_input_context のtypoと思われる
+"          IBusのアップデートで修正されるかもしれないので要注意
+" ---------------------------------------------------
+"   0 : 使用しない
+"   1 : 常にPythonスクリプト制御を使用する
+"   2 : 常にPythonインターフェイス制御を使用する
+"   3 : Pythonインターフェイスか外部スクリプトを自動設定
+" ---------------------------------------------------
+
+" 自動生成するpythonスクリプト保存場所
+if !exists('g:IM_CtrlIBusPythonFileDir')
+  let g:IM_CtrlIBusPythonFileDir = fnamemodify(tempname(), ':h')
+endif
+
+" 使用するPythonインターフェイス
+if !exists('g:IM_CtrlIBusPythonVer')
+  let g:IM_CtrlIBusPythonVer = 'python'
+  " if !has('python') && has('python3')
+  "   let g:IM_CtrlIBusPythonVer = 'python3'
+  " endif
+endif
+
+" JpFixModeの切り替えにPyIBusToggleEx()を使用する
+if !exists('g:IM_CtrlIBusPythonToggleEx')
+  let g:IM_CtrlIBusPythonToggleEx = 0
+endif
+
 " モードフック
 augroup InsertHookIM
   autocmd!
@@ -165,19 +221,24 @@ function! IMState(cmd)
   if s:init()
     return
   endif
-
-  let l:IM_CtrlMode = g:IM_CtrlMode
   let cmd = a:cmd
   if cmd == 'Enter'
     if g:IMState
-      let cmd = l:IM_CtrlMode == 1 ? 'On' : 'Toggle'
+      let cmd = g:IM_CtrlMode == 1 ? 'On' : 'Toggle'
+      if g:IM_CtrlIBusPython
+        let cmd = ''
+        call PyIBusEnableEx()
+      endif
     endif
   elseif cmd == 'Leave'
     if g:IM_vi_CooperativeMode == 0
       return ''
+    elseif g:IM_vi_CooperativeMode == 2 && g:IM_CtrlIBusPython
+      let cmd = ''
+      call PyIBusDisableEx()
     else
-      let cmd = l:IM_CtrlMode == 1 ? 'Off' : ''
-      if l:IM_CtrlMode == 3 && g:IMState
+      let cmd = g:IM_CtrlMode == 1 ? 'Off' : ''
+      if g:IM_CtrlMode == 3 && g:IMState
         " 疑似vi協調モード
         let cmd = 'Toggle'
       endif
@@ -186,9 +247,15 @@ function! IMState(cmd)
     let g:IMState = g:IMState == 0 ? 2 : 0
     let msg = (exists('b:IM_CtrlBufLocal') && b:IM_CtrlBufLocal) ? '(local)' : ''
     let msg = printf(g:IM_CtrlMsg, msg)
+    if g:IM_CtrlIBusPythonToggleEx
+      call PyIBusToggleEx()
+      let cmd = g:IMState ? 'On' : 'Off'
+      redraw| echo msg.cmd
+      return ''
+    endif
     let cmd = g:IMState ? 'On' : 'Off'
     redraw| echo msg.cmd
-    if l:IM_CtrlMode > 1
+    if g:IM_CtrlMode > 1
       let cmd = ''
     endif
     if g:IM_JpFixModeAutoToggle == 1
@@ -221,6 +288,7 @@ if (g:IM_CtrlMode == 6)
     return ''
   endfunction
   endif
+  let g:IM_CtrlMode = 1
   let g:IM_vi_CooperativeMode = 1
   let g:IM_JpFixModeAutoToggle = 0
 endif
@@ -305,6 +373,144 @@ function s:BufLeave()
   endif
 endfunction
 
+""""""""""""""""""""""""""""""
+" PythonでIBusの制御
+
+if IM_CtrlIBusPython
+  function! IMCtrl(cmd)
+    let cmd = a:cmd
+    if cmd == 'On'
+      call PyIBusEnable()
+    elseif cmd == 'Off'
+      call PyIBusDisable()
+    elseif cmd == 'Toggle'
+      call PyIBusToggle()
+    endif
+    return ''
+  endfunction
+endif
+
+function! PyIBusEnable()
+exe g:IM_CtrlIBusPythonVer.' << EOF'
+import ibus
+bus = ibus.Bus()
+ic  = ibus.InputContext(bus, bus.current_input_contxt())
+if not ic.is_enabled():
+  ic.enable()
+EOF
+endfunction
+
+function! PyIBusDisable()
+exe g:IM_CtrlIBusPythonVer.' << EOF'
+import ibus
+bus = ibus.Bus()
+ic  = ibus.InputContext(bus, bus.current_input_contxt())
+if ic.is_enabled():
+  ic.disable()
+EOF
+endfunction
+
+function! PyIBusToggle()
+exe g:IM_CtrlIBusPythonVer.' << EOF'
+import ibus
+bus = ibus.Bus()
+ic  = ibus.InputContext(bus, bus.current_input_contxt())
+if ic.is_enabled():
+  ic.disable()
+else:
+  ic.enable()
+EOF
+endfunction
+
+function! PyIBusToggleEx()
+exe g:IM_CtrlIBusPythonVer.' << EOF'
+import ibus,vim
+bus = ibus.Bus()
+ic  = ibus.InputContext(bus, bus.current_input_contxt())
+if ic.is_enabled():
+  ic.disable()
+  vim.command("let g:IMState=0")
+else:
+  ic.enable()
+  vim.command("let g:IMState=2")
+EOF
+endfunction
+" IBusのvi協調モード対策にInsertEnter時に使用するIM有効化コマンド
+if !exists('*PyIBusEnableEx')
+silent! function PyIBusEnableEx()
+  " 外部をコマンドを実行するなら & を付けて非同期で実行すること
+  call IMCtrl('On')
+endfunction
+endif
+" IBusのvi協調モード対策にInsertLeave時に使用するIM無効化コマンド
+if !exists('*PyIBusDisableEx')
+silent! function PyIBusDisableEx()
+  " 外部をコマンドを実行するなら & を付けて非同期で実行すること
+  call IMCtrl('Off')
+endfunction
+endif
+
+if IM_CtrlIBusPython == 3
+  if !has(g:IM_CtrlIBusPythonVer)
+    " Pythonインターフェイスがない
+    let IM_CtrlIBusPython = 1
+  elseif !has('gui_running')
+    " 非GUIではすべてPythonインターフェイスを使用する
+    let IM_CtrlIBusPython = 2
+  endif
+endif
+if IM_CtrlIBusPython == 0 || !has(g:IM_CtrlIBusPythonVer)
+  let IM_CtrlIBusPythonToggleEx = 0
+endif
+
+let s:pydir = expand(g:IM_CtrlIBusPythonFileDir)
+if g:IM_CtrlIBusPython == 1 || g:IM_CtrlIBusPython == 3 || (g:IM_CtrlIBusPython == 2 && g:IM_vi_CooperativeMode == 2)
+  if isdirectory(s:pydir) == 0
+    call mkdir(s:pydir, 'p')
+  endif
+  let s:pyfile = s:pydir . '/ibus-enable.py'
+  if !filereadable(s:pyfile)
+    call writefile(['import ibus', 'bus = ibus.Bus()', 'ic = ibus.InputContext(bus, bus.current_input_contxt())', 'ic.enable()'], expand(s:pyfile))
+  endif
+  let s:pyfile = s:pydir . '/ibus-disable.py'
+  if !filereadable(s:pyfile)
+    call writefile(['import ibus', 'bus = ibus.Bus()', 'ic = ibus.InputContext(bus, bus.current_input_contxt())', 'ic.disable()'], expand(s:pyfile))
+  endif
+  let s:pyfile = s:pydir . '/ibus-toggle.py'
+  if !filereadable(s:pyfile)
+    call writefile(['import ibus', 'bus = ibus.Bus()', 'ic = ibus.InputContext(bus, bus.current_input_contxt())', 'if ic.is_enabled():', '  ic.disable()', 'else:', '  ic.enable()'], expand(s:pyfile))
+  endif
+  let s:pydir = escape(s:pydir, ' ')
+  if g:IM_CtrlIBusPython == 1
+    function! PyIBusEnable()
+      let res = system('python '.s:pydir.'/ibus-enable.py '.g:IM_CtrlAsync)
+    endfunction
+    function! PyIBusDisable()
+      let res = system('python '.s:pydir.'/ibus-disable.py '.g:IM_CtrlAsync)
+    endfunction
+    function! PyIBusToggle()
+      let res = system('python '.s:pydir.'/ibus-toggle.py '.g:IM_CtrlAsync)
+    endfunction
+    function! PyIBusEnableEx()
+      call PyIBusEnable()
+    endfunction
+  elseif g:IM_CtrlIBusPython == 3
+    function! PyIBusEnableEx()
+      let res = system('python '.s:pydir.'/ibus-enable.py '.g:IM_CtrlAsync)
+    endfunction
+  endif
+  if g:IM_vi_CooperativeMode == 2
+    function! PyIBusDisableEx()
+      let res = system('python '.s:pydir.'/ibus-disable.py &')
+    endfunction
+  endif
+endif
+
+" For your eyes only.
+if exists('g:fudist')
+  inoremap <silent> <C-j> <C-r>=IMState('FixMode')<CR>
+endif
+
 if g:IM_CtrlMode != 4
   let &cpo=s:keepcpo
   unlet s:keepcpo
@@ -322,13 +528,16 @@ endif
 "----------------------------------------
 " for Windows / <C-^>
 "----------------------------------------
+silent! inoremap <silent> <ESC> <ESC>
+silent! inoremap <silent> <C-[> <ESC>
+
 if (has('gui_running') && (has('multi_byte_ime') || has('xim')))
   au GUIEnter * set iminsert=0 imsearch=0
 endif
 
 function! IMState(cmd)
   if s:init()
-    return ''
+    return
   endif
   let cmd = a:cmd
   if cmd == 'Enter'
@@ -345,6 +554,26 @@ function! IMState(cmd)
   endif
   return ''
 endfunction
+
+function! s:execExCommand(cmd, ...)
+  let saved_ve = &virtualedit
+  for index in range (1, a:0)
+    if a:{index} == 'onemore'
+      silent setlocal virtualedit+=onemore
+    endif
+  endfor
+  silent exe a:cmd
+  if a:0 > 0
+    silent exe 'setlocal virtualedit='.saved_ve
+  endif
+  return ''
+endfunction
+
+
+" For your eyes only.
+if exists('g:fudist')
+  inoremap <silent> <C-j> <C-^><C-r>=IMState('FixMode')<CR>
+endif
 
 let &cpo=s:keepcpo
 unlet s:keepcpo
